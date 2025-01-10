@@ -16,25 +16,34 @@ pipeline {
                 changeRequest target: 'main'
             }
             steps {
-                echo "PR: ${CHANGE_ID}"
+                script {
+                    echo "PR: ${CHANGE_ID}"
+                }
             }
         }            
         
         stage('Dockerize') {
             steps {
-                sh "echo "docker"
+                script {
+                    sh 'echo "docker"'
+                }
             }
         }
 
         stage('Login to Docker Hub') {
             steps {
-                sh 'echo "dockerhub"'
+                script {
+                    sh 'echo "Logging in to Docker Hub"'
+                    sh "echo ${DOCKERHUB_CREDENTIALS} | docker login -u <username> --password-stdin"
+                }
             }
         }
 
         stage('Upload to Docker Hub') {
             steps {
-                sh "echo 'docker push mo1074/jenkins-app:${BUILD_NUMBER}'"
+                script {
+                    sh "docker push mo1074/jenkins-app:${BUILD_NUMBER}"
+                }
             }
         }    
     }
