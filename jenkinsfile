@@ -34,7 +34,7 @@ pipeline {
             steps {
                 script {
                     sh 'echo "Logging in to Docker Hub"'
-                    sh "echo ${DOCKERHUB_CREDENTIALS} | docker login -u <username> --password-stdin"
+        
                 }
             }
         }
@@ -42,7 +42,7 @@ pipeline {
         stage('Upload to Docker Hub') {
             steps {
                 script {
-                    sh "docker push mo1074/jenkins-app:${BUILD_NUMBER}"
+                    sh 'echo " end"'
                 }
             }
         }    
