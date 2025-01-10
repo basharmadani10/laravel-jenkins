@@ -22,19 +22,19 @@ pipeline {
         
         stage('Dockerize') {
             steps {
-                sh "docker build -t mo1074/jenkins-app:${BUILD_NUMBER} ."
+                sh "echo "docker"
             }
         }
 
         stage('Login to Docker Hub') {
             steps {
-                sh 'echo $DOCKERHUB_CREDENTIALS_PSW | docker login -u $DOCKERHUB_CREDENTIALS_USR --password-stdin'
+                sh 'echo "dockerhub"'
             }
         }
 
         stage('Upload to Docker Hub') {
             steps {
-                sh "docker push mo1074/jenkins-app:${BUILD_NUMBER}"
+                sh "echo 'docker push mo1074/jenkins-app:${BUILD_NUMBER}'"
             }
         }    
     }
