@@ -1,0 +1,41 @@
+pipeline {
+    agent any
+    environment {
+        DOCKERHUB_CREDENTIALS = credentials('dockerhub')
+    }
+    stages {
+        stage('Environment Variables') {
+            steps {
+                sh 'printenv'
+                sh 'ls -la'
+            }
+        }
+        
+        stage('Pull Request Number') {
+            when {
+                changeRequest target: 'main'
+            }
+            steps {
+                echo "PR: ${CHANGE_ID}"
+            }
+        }            
+        
+        stage('Dockerize') {
+            steps {
+                sh "docker build -t mo1074/jenkins-app:${BUILD_NUMBER} ."
+            }
+        }
+
+        stage('Login to Docker Hub') {
+            steps {
+                sh 'echo $DOCKERHUB_CREDENTIALS_PSW | docker login -u $DOCKERHUB_CREDENTIALS_USR --password-stdin'
+            }
+        }
+
+        stage('Upload to Docker Hub') {
+            steps {
+                sh "docker push mo1074/jenkins-app:${BUILD_NUMBER}"
+            }
+        }    
+    }
+}
