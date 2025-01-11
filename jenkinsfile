@@ -1,50 +1,73 @@
 pipeline {
     agent any
+
     environment {
+        IMAGE_NAME = 'mo1074/jenkins-flask-app'
+        IMAGE_TAG = "${IMAGE_NAME}:${env.GIT_COMMIT}"
         DOCKERHUB_CREDENTIALS = credentials('dockerhub')
     }
+
     stages {
-        stage('Environment Variables') {
+        stage("Check for Git Tag") {
             steps {
-                sh 'printenv'
-                sh 'ls -la'
+                script {
+                    def tag = sh(returnStdout: true, script: "git tag --contains").trim()
+                    env.GIT_TAG = tag ?: ''
+                    echo "GIT_TAG is set to: ${env.GIT_TAG}"
+                    env.IMAGE_TAG_RELEASE = "${IMAGE_NAME}:${env.GIT_TAG}"
+                }
             }
         }
-        
-        stage('Pull Request Number') {
+
+        stage('Setup') {
+            steps {
+                script {
+                    sh "set -e; poetry install --with dev"
+                }
+            }
+        }
+
+        stage('Create Release') {
             when {
-                changeRequest target: 'main'
+                expression { return env.GIT_TAG == "" }
             }
             steps {
                 script {
-                    echo "PR: ${CHANGE_ID}"
-                }
-            }
-        }            
-        
-        stage('Dockerize') {
-            steps {
-                script {
-                    sh 'echo "docker"'
+                    sh 'printenv'
+                    def tag = sh(returnStdout: true, script: "poetry run semantic-release version").trim()
+                    echo "New tag created: ${tag}"
+                    sh "poetry run semantic-release publish"
                 }
             }
         }
 
-        stage('Login to Docker Hub') {
-            steps {
-                script {
-                    sh 'echo "Logging in to Docker Hub"'
-        
+        stage("Build and Deploy") {
+            when {
+                expression { return env.GIT_TAG != "" }
+            }
+            stages {
+                stage('Docker Login') {
+                    steps {
+                        withCredentials([usernamePassword(credentialsId: 'docker-hub', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
+                            sh 'echo ${PASSWORD} | docker login -u ${USERNAME} --password-stdin'
+                            echo 'Login successfully'
+                        }
+                    }
+                }
+
+                stage('Build Docker Image') {
+                    steps {
+                        echo "image: ${IMAGE_TAG}"
+                    }
+                }
+
+                stage('Deploy') {
+                    steps {
+                   
+                        echo "Deployed image: ${IMAGE_TAG}"
+                    }
                 }
             }
         }
-
-        stage('Upload to Docker Hub') {
-            steps {
-                script {
-                    sh 'echo " end"'
-                }
-            }
-        }    
     }
 }
