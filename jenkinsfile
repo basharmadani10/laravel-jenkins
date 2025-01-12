@@ -1,70 +1,20 @@
 pipeline {
     agent any
 
-    environment {
-        IMAGE_NAME = 'mo1074/jenkins-flask-app'
-        IMAGE_TAG = "${IMAGE_NAME}:${env.GIT_COMMIT}"
-        DOCKERHUB_CREDENTIALS = credentials('dockerhub')
-    }
-
     stages {
-        stage("Check for Git Tag") {
+        stage('Clone Branches') {
             steps {
                 script {
-                    def tag = sh(returnStdout: true, script: "git tag --contains").trim()
-                    env.GIT_TAG = tag ?: ''
-                    echo "GIT_TAG is set to: ${env.GIT_TAG}"
-                    env.IMAGE_TAG_RELEASE = "${IMAGE_NAME}:${env.GIT_TAG}"
-                }
-            }
-        }
-
-        stage('Setup') {
-            steps {
-                script {
-                    sh "set -e; poetry install --with dev"
-                }
-            }
-        }
-
-        stage('Create Release') {
-            when {
-                expression { return env.GIT_TAG == "" }
-            }
-            steps {
-                script {
-                    sh 'printenv'
-                    def tag = sh(returnStdout: true, script: "poetry run semantic-release version").trim()
-                    echo "New tag created: ${tag}"
-                    sh "poetry run semantic-release publish"
-                }
-            }
-        }
-
-        stage("Build and Deploy") {
-            when {
-                expression { return env.GIT_TAG != "" }
-            }
-            stages {
-                stage('Docker Login') {
-                    steps {
-                        withCredentials([usernamePassword(credentialsId: 'docker-hub', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
-                            sh 'echo ${PASSWORD} | docker login -u ${USERNAME} --password-stdin'
-                            echo 'Login successfully'
+                    def branches = ['b1', 'main']
+                    
+               
+                    for (branch in branches) {
+                        dir(branch) { 
+                            checkout([$class: 'GitSCM', 
+                                branches: [[name: "origin/${branch}"]],
+                                userRemoteConfigs: [[url: 'https://github.com/basharmadani10/laravel-jenkins']]
+                            ])
                         }
-                    }
-                }
-
-                stage('Build Docker Image') {
-                    steps {
-                        echo "image: ${IMAGE_TAG}"
-                    }
-                }
-
-                stage('Deploy') {
-                    steps {
-                   
-                        echo "Deployed image: ${IMAGE_TAG}"
                     }
                 }
             }
