@@ -5,11 +5,12 @@ pipeline {
         stage('Clone Branches') {
             steps {
                 script {
+                    // Define the branches you want to clone
                     def branches = ['b1', 'main']
                     
-               
+                    // Loop through each branch and clone into a separate directory
                     for (branch in branches) {
-                        dir(branch) { 
+                        dir(branch) { // Create a directory for each branch
                             checkout([$class: 'GitSCM', 
                                 branches: [[name: "origin/${branch}"]],
                                 userRemoteConfigs: [[url: 'https://github.com/basharmadani10/laravel-jenkins']]
